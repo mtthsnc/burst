@@ -155,6 +155,8 @@ Work inside this worktree for the remainder of the pipeline.
 
 ## Step 5: Implement
 
+If Step 1 found frontend files touched, capture a baseline screenshot of the affected view before changing anything — start the dev server, `agent-browser open <url>`, `agent-browser screenshot before.png`. This is the "before" side of the PR's before/after comparison; there's no other point in the pipeline where the pre-change UI still exists.
+
 Code the change directly. No sub-skill invocation. No brainstorming, planning, or TDD. Just implement using codebase context from step 1.
 
 Do NOT write tests unless the user's context explicitly mentions tests. Burst is about shipping the change the user described — nothing more.
@@ -163,10 +165,11 @@ Do NOT write tests unless the user's context explicitly mentions tests. Burst is
 
 Skip this step if Step 1's file scan touched no frontend files (Vue, templates, SCSS/CSS, frontend JS/TS). Otherwise, before squashing:
 
-1. Start the dev server for the affected app.
+1. Start the dev server for the affected app (if not already running from Step 5).
 2. Run `agent-browser skills get dogfood` and drive the change: golden path, edge cases (boundary states, mobile viewport, interaction with adjacent UI), and a quick regression sweep of nearby features.
 3. Check accessibility basics: color contrast, non-color-only signaling, no new console errors.
-4. Screenshot what you check — these back the Test plan checklist in Step 9, checked off against what was actually verified, not left as generic placeholders.
+4. `agent-browser screenshot after.png` at the same view/viewport as `before.png` — this is the canonical "after" shot for the PR.
+5. Screenshot anything else you check — these back the Test plan checklist in Step 9, checked off against what was actually verified, not left as generic placeholders.
 
 **If validation finds a bug:** fix and re-validate. Cap real attempts at 3 total. After attempt 1 fails, diagnose the actual root cause before attempt 2 — don't keep guessing at CSS/markup tweaks blind.
 
@@ -200,9 +203,24 @@ git push --force-with-lease origin issue-<N>
 
 ## Step 9: Create PR on Upstream
 
+If Step 6 ran, host `before.png`/`after.png` as a gist and pull their raw URLs — `gh` is already required by the hard-gate, so this adds no new dependency:
+
 ```bash
-gh pr create -R <upstream-repo> --title "<type>(<scope>): <description>" --body "$(cat <<'EOF'
+gist_url=$(gh gist create before.png after.png --public -d "issue-<N> before/after")
+GIST_ID=$(basename "$gist_url")
+BEFORE_URL=$(gh api gists/$GIST_ID --jq '.files["before.png"].raw_url')
+AFTER_URL=$(gh api gists/$GIST_ID --jq '.files["after.png"].raw_url')
+```
+
+Lead the Summary with a before/after table when those screenshots exist; otherwise skip straight to the bullet points.
+
+```bash
+gh pr create -R <upstream-repo> --title "<type>(<scope>): <description>" --body "$(cat <<EOF
 ## Summary
+| Before | After |
+|---|---|
+| ![before]($BEFORE_URL) | ![after]($AFTER_URL) |
+
 - <bullet points describing changes>
 
 ## Test plan
