@@ -134,13 +134,21 @@ Look up the issue type ID and project ID in step 1 (sniff codebase) and cache th
 
 ## Step 4: Worktree + Branch
 
-Invoke the `superpowers:using-git-worktrees` skill to create an isolated workspace so your current branch stays untouched. The branch name MUST be `issue-<N>` where N is the issue number. No other naming convention.
+Create an isolated workspace so your current branch stays untouched. Branch name MUST be `issue-<N>` where N is the issue number — no other naming convention.
 
-The skill prefers a native worktree tool and falls back to `git worktree add`. Burst needs the branch based on the upstream default branch, so once inside the new worktree, set the base explicitly before implementing:
+If your harness exposes a native worktree tool, use it, then set the base explicitly once inside — native tools may default to branching from your current branch rather than upstream's default:
 
 ```bash
 git fetch upstream
 git checkout -B issue-<N> upstream/<default-branch>
+```
+
+Otherwise, create the worktree directly:
+
+```bash
+git fetch upstream
+git worktree add ../issue-<N> -b issue-<N> upstream/<default-branch>
+cd ../issue-<N>
 ```
 
 Work inside this worktree for the remainder of the pipeline.
@@ -233,7 +241,7 @@ Burst complete:
 | "I'll use git rebase -i to squash" | Use `git reset --soft`. Interactive rebase is unsupported. |
 | "I'll name the branch feat/..." | Branch name is `issue-<N>`. Always. |
 | "I should add remotes first" | The hard-gate requires them to exist already. Stop and tell the user. |
-| "I'll just checkout a branch" | Create an isolated worktree via the `superpowers:using-git-worktrees` skill. Never checkout in the main tree. |
+| "I'll just checkout a branch" | Create an isolated worktree first, native tool or `git worktree add`. Never checkout in the main tree. |
 | "I'll forget to report the URLs" | Report BOTH issue URL and PR URL at the end. Always. |
 | "It's just visual, minor, ship it anyway" | Not your call to skip the exhaustion path. If it's a true edge case, scope it out and file the follow-up issue; if it's the core ask, stop and report. Either way, don't ship it unremarked. |
 | "I'll keep tweaking CSS until it works" | Attempt 1 failing means diagnose the real cause, not guess again. At 3 failed attempts, stop guessing and take Step 6's exhaustion path — don't take a 4th swing. |
