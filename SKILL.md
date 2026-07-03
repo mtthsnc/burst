@@ -177,8 +177,6 @@ Do NOT write tests unless the user's context explicitly mentions tests. Burst is
 
 If you hit something unexpected mid-implementation - a function doesn't exist where you expected it, a data model is shaped differently than assumed - note it rather than silently working around it. These surprises often mean your mental model is off, and the workaround might be wrong.
 
-
-
 ## Step 6: Validate in Browser (frontend changes only)
 
 Skip this step if Step 1's file scan touched no frontend files (Vue, templates, SCSS/CSS, frontend JS/TS). Otherwise, before squashing:
